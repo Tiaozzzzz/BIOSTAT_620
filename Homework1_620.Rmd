@@ -1,0 +1,268 @@
+---
+title: "Homework1_620"
+output: pdf_document
+date: "2024-02-04"
+author: Zihan Wang
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readxl)
+library(ggplot2)
+library(GGally)
+library(lubridate)
+library(dplyr)
+library(circular)
+```
+
+```{r, tidy=TRUE,wrap=TRUE}
+
+#1(a)
+
+#Hypothesis:
+#High amount of screen time is associated with high levels of depressive symptoms
+
+#Tang, S., Werner-Seidler, A., Torok, M., Mackinnon, A. J., & Christensen, H. (2021). The relationship between screen time and mental health in young people: A systematic review of longitudinal studies. Clinical psychology review, 86, 102021. https://doi.org/10.1016/j.cpr.2021.102021
+
+#1(b)
+
+#Informed consent form ensures that participants are fully aware of the studies they are invoveld in regard of their purposes, procedures,risks and benefits and also the right to withdraw from the study and the confidentiality of the raw research data.
+
+
+#1(c)
+
+# Screen activity is recorded in real-time by the mobile device. We
+#collected daily entries of total screen time (Total.ST: total screen time in HH-MM format, and Total.ST.min: total screen time in MM format), social app screen time (Social.ST: social app screen time in HH-MM format, and Social.ST.min: social app screen time in MM format),total number of times the user picked up the phone (Pickups), and the time of the first pick-up (Pickup.1st). We are using the screen time data from 12/24/2023 to 01/26/2024 stored in the mobile device. 
+
+```
+
+
+```{r, tidy=TRUE,wrap=TRUE}
+Dataframe <- read_excel("Screen_Time.xlsx")
+```
+
+```{r, tidy=TRUE,wrap=TRUE}
+
+Dataframe$Pickup.1st <- sapply(Dataframe$Pickup.1st, function(x) format(x, "%H:%M"))
+
+Dataframe <- na.omit(Dataframe)
+```
+
+```{r, tidy=TRUE,wrap=TRUE}
+
+#1(d)
+Dataframe$Proportion_Social = Dataframe$Social.ST.min/Dataframe$Total.ST.min
+Dataframe$Duration = Dataframe$Total.ST.min/Dataframe$Pickups
+Dataframe$Date <- as.Date(Dataframe$Date, format="%m/%d/%Y")
+Dataframe$if_weekend <- ifelse(weekdays(Dataframe$Date) %in% c("Saturday", "Sunday"), "Weekend", "Weekday")
+```
+
+```{r, tidy=TRUE,wrap=TRUE}
+
+#2(a) 
+
+#The data collected during weekend days are colored in red in order to visualize any differences of mobile device use between weekdays and weekends. It seems that there is no obvious difference of the temporal pattern between weekdays and weekends in regard of five variables.
+
+
+total = ggplot(Dataframe,aes(x=Date, y=Total.ST.min, color = if_weekend)) +
+geom_line (color= "steelblue") +
+geom_point () +
+xlab ("") + ylab ("Total_screen_time_(min)")+
+ylim (100,800)+
+scale_color_manual(labels = c ("weekdays", "weekends") ,values=c ("black", "red"))+
+theme_minimal()+
+theme(axis.text.x=element_text(angle=60, hjust=1), legend.title=element_blank())
+print(total)
+
+social = ggplot(Dataframe,aes(x=Date, y=Social.ST.min, color = if_weekend)) +
+geom_line (color= "steelblue") +
+geom_point () +
+xlab ("") + ylab ("Social_screen_time_(min)")+
+ylim (0,500)+
+scale_color_manual(labels = c ("weekdays", "weekends") ,values=c ("black", "red"))+
+theme_minimal()+
+theme(axis.text.x=element_text(angle=60, hjust=1), legend.title=element_blank())
+print(social)
+
+pickup = ggplot(Dataframe,aes(x=Date, y=Pickups, color = if_weekend)) +
+geom_line (color= "steelblue") +
+geom_point () +
+xlab ("") + ylab ("Pickups")+
+ylim (50,200)+
+scale_color_manual(labels = c ("weekdays", "weekends") ,values=c ("black", "red"))+
+theme_minimal()+
+theme(axis.text.x=element_text(angle=60, hjust=1), legend.title=element_blank())
+print(pickup)
+
+social_proportion = ggplot(Dataframe,aes(x=Date, y=Proportion_Social, color = if_weekend)) +
+geom_line (color= "steelblue") +
+geom_point () +
+xlab ("") + ylab ("Social_proportion")+
+ylim (0,1)+
+scale_color_manual(labels = c ("weekdays", "weekends") ,values=c ("black", "red"))+
+theme_minimal()+
+theme(axis.text.x=element_text(angle=60, hjust=1), legend.title=element_blank())
+print(social_proportion)
+
+duration = ggplot(Dataframe,aes(x=Date, y=Duration, color = if_weekend)) +
+geom_line (color= "steelblue") +
+geom_point () +
+xlab ("") + ylab ("Duration")+
+ylim (0,6)+
+scale_color_manual(labels = c ("weekdays", "weekends") ,values=c ("black", "red"))+
+theme_minimal()+
+theme(axis.text.x=element_text(angle=60, hjust=1), legend.title=element_blank())
+print(duration)
+```
+
+```{r, tidy=TRUE,wrap=TRUE}
+
+#2(b)
+
+#The pair of daily duration per use and total screen time has the highest correlation.It is also of worth to point out that the daily proportion of social screen time and total screen time are nearly uncorrelated, the number of pickup times and social screen time are nearly uncorrelated, and the daily duration per use and the daily proportion of social screen time are nealy uncorrelated.
+
+ggpairs(Dataframe, 
+        columns=c("Total.ST.min","Social.ST.min","Pickups","Proportion_Social","Duration"))
+```
+
+
+```{r, tidy=TRUE,wrap=TRUE}
+
+#2(c)
+
+# For total screen time, social screen time and pickups after the patterns are quite similar, that is after a certain point the curves drop dramatically, indicating that high screen time, high social screen time and high pickups are relatively less common.While for the daily proportion of the social screen time and daily duration per use the curves are relatively smooth.
+
+ggplot(Dataframe, aes(x = Total.ST.min)) +
+  stat_function(fun = function(x) 1 - ecdf(Dataframe$Total.ST.min)(x), geom = "step") +
+  labs(title = "OTC for Total Screen Time", x = "Total Screen Time (min)", y = "P( X >= c )")
+
+ggplot(Dataframe, aes(x = Social.ST.min)) +
+  stat_function(fun = function(x) 1 - ecdf(Dataframe$Social.ST.min)(x), geom = "step") +
+  labs(title = "OTC for Social Screen Time", x = "Social Screen Time (min)", y = "P( X >= c )")
+
+ggplot(Dataframe, aes(x = Pickups)) +
+  stat_function(fun = function(x) 1 - ecdf(Dataframe$Pickups)(x), geom = "step") +
+  labs(title = "OTC for Pickups", x = "Pickups", y = "P( X >= c )")
+
+ggplot(Dataframe, aes(x = Proportion_Social)) +
+  stat_function(fun = function(x) 1 - ecdf(Dataframe$Proportion_Social)(x), geom = "step") +
+  labs(title = "OTC for Daily Proportion of Social Screen Time", x = "Daily Proportion of Social Screen Time", y = "P( X >= c )")
+
+ggplot(Dataframe, aes(x = Duration)) +
+  stat_function(fun = function(x) 1 - ecdf(Dataframe$Duration)(x), geom = "step") +
+  labs(title = "OTC for Daily Duration per use", x = "Daily Duration per use", y = "P( X >= c )")
+
+
+```
+
+
+
+
+
+```{r, tidy=TRUE,wrap=TRUE}
+
+#2(d) 
+
+#From the acf plot we can infer the only possible autocorrelation is in regard of daily proportion of the social screen time.
+
+acf(Dataframe$Total.ST.min)
+
+acf(Dataframe$Social.ST.min)
+
+acf(Dataframe$Pickups)
+
+acf(Dataframe$Proportion_Social)
+
+acf(Dataframe$Duration)
+
+acf(Dataframe$Total.ST.min,plot = FALSE)
+
+acf(Dataframe$Social.ST.min,plot = FALSE)
+
+acf(Dataframe$Pickups,plot = FALSE)
+
+acf(Dataframe$Proportion_Social,plot = FALSE)
+
+acf(Dataframe$Duration,plot = FALSE)
+
+
+```
+
+```{r, tidy=TRUE,wrap=TRUE}
+#3(a)
+
+Dataframe$Pickup.1st <- as.POSIXct(Dataframe$Pickup.1st, format="%H:%M")
+
+Dataframe = Dataframe %>% 
+mutate(Pickup.1st.angular =(hour(Pickup.1st)*60+minute(Pickup.1st))/(24*60)*360)
+
+#3(b)
+
+# The first pickup time is mainly concentrated between 12am and 1am.
+
+first.pickup.cir = circular(Dataframe$Pickup.1st.angular, units = "degrees", template = "clock24")
+png("HD1_C3(b).png")
+plot(first.pickup.cir,col= "blue")
+dev.off()
+
+#3(c)
+
+# I choose bin size to be 48, which corresponds to an interval of half an hour. 
+
+png("HD1_C3(c).png")
+plot(first.pickup.cir,stack=TRUE, bins=48, col= "red")
+dev.off()
+
+```
+
+```{r, tidy=TRUE,wrap=TRUE}
+
+#4(a)
+
+#The Yt is the daily number of pickups, but the rate lambda is the expected hourly rate, there exists an inconsistency between the unit.
+
+#4(b)
+Dataframe$Total.ST.Hour = Dataframe$Total.ST.min/60
+
+model = glm(Pickups ~ offset(log(Total.ST.Hour)), family = "poisson", data = Dataframe)
+
+lambda = exp(coef(model))
+print(lambda)
+
+
+#4(c)
+
+#(c.1) the p-value for Xt is 0.9139, so there is no evidence of significantly different behavior of daily pickups between weekdays and weekends using the significance level alpha=0.05
+
+#(c.2)the p-value for Zt is 0.0506, so there is no evidence of significantly different behavior of daily pickups between whether or not being days on winter break.
+
+Dataframe$if_break = c(rep(0, 17), rep(1, 16)) 
+Dataframe$if_weekend_dummy = ifelse(Dataframe$if_weekend == "Weekday",1,0)
+
+model_ <- glm(Pickups ~ if_break + if_weekend_dummy, 
+                 family = poisson(link = "log"), data = Dataframe, 
+                 offset = log(Total.ST.Hour))
+
+summary(model_)
+
+
+```
+
+```{r, tidy=TRUE,wrap=TRUE}
+
+#5(a)
+
+Dataframe$Pickup.1st.pi = (Dataframe$Pickup.1st.angular/180)*pi
+mle_result <- mle.vonmises(Dataframe$Pickup.1st.pi)
+print(mle_result)
+
+#5(b)
+pvonmises_result <- pvonmises((127.5/180)*pi, mu=0.09784, kappa=13.94)
+
+#The return value of the pvonmises is nearly one, which means the probability of my first pickup being 8:30 AM or later is nearly 0
+
+```
+
+
+
